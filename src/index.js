@@ -13,6 +13,15 @@ function createRenderer(bundle) {
   })
 }
 
+function clone(obj) {
+  let r
+  try{
+    r = JSON.parse(JSON.stringify(obj))
+  } catch(e) {}
+
+  return r || {}
+}
+
 export default function (instance, {bundlePath}) {
   const req = instance.request
   const res = instance.response
@@ -39,15 +48,18 @@ export default function (instance, {bundlePath}) {
 
     renderStream.on('end', () => {
       console.log(`whole request: ${Date.now() - s}ms`)
+      instance.state.$vue.initialState = clone(ret.initialState)
+      instance.state.$vue.html = ret.html
       resolve(ret)
-      instance.state.$vue.initialState = ret.initialState || {}
-      instance.state.$vue.html = ret.html || ''
     })
 
     renderStream.on('error', err => {
-      res.status(500).end('Internal Error 500')
-      console.error(`error during render : ${req.url}`)
-      rejcect()
+      res.status = 500
+      console.info(instance)
+      instance.body = 'Internal Error 500'
+
+      console.error(`error during render : ${req.url}`, err.stack)
+      reject()
     })
   })
 }
